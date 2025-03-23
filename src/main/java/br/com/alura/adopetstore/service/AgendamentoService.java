@@ -5,6 +5,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+
 @Service
 public class AgendamentoService {
     @Autowired
@@ -18,6 +21,12 @@ public class AgendamentoService {
         var estoqueZerado = relatorioService.infoEstoque();
         var faturamentoObtido = relatorioService.faturamentoObtido();
 
-        emailRelatorioGerado.enviar(estoqueZerado, faturamentoObtido);
+        CompletableFuture.allOf(estoqueZerado, faturamentoObtido).join();
+
+        try {
+            emailRelatorioGerado.enviar(estoqueZerado.get(), faturamentoObtido.get());
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
